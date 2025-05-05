@@ -1,0 +1,29 @@
+name: eco_quest  # Add your app name here (lowercase_with_underscores)
+description: A new Flutter project for environmental quests.  # Add description
+version: 1.0.0+1  # Add version number
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'  # Specify Dart SDK constraints
+
+dependencies:
+  cloud_firestore: ^5.6.7
+  firebase_auth: ^5.5.3
+  firebase_core: ^3.13.0
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.0.7
+  logger: ^2.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
