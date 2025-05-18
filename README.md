@@ -6,7 +6,7 @@ berbagai tantangan yang berkaitan dengan praktik ramah lingkungan, seperti mengu
 sampah plastik, menanam pohon, atau melakukan daur ulang, setiap tantangan yang 
 diselesaikan akan memberikan poin dan penghargaan. 
 
-# 📚 Tentang Proyek
+## Tentang Proyek
 
 Proyek ini dibuat sebagai tugas besar untuk mata kuliah Pengembangan Aplikasi Mobile.  
 Tujuan utama aplikasi ini adalah untuk:
