@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:eco_quest/config/app_theme.dart';
+import '../../config/app_constants.dart';
+import '../../widgets/custom_white_appbar.dart';
 
+// StatefulWidget untuk layar login pengguna
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -9,247 +13,264 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  
-  String _email = '';
-  String _password = '';
-  String? _errorMessage;
+  // Key untuk form validasi
+  final _formKey = GlobalKey<FormState>();
+
+  // Instance FirebaseAuth untuk autentikasi
+  final _auth = FirebaseAuth.instance;
+
+  // Controller untuk mengontrol input email dan password
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  // State untuk menampilkan loading, sembunyikan password, dan pesan error
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
 
+  @override
+  void dispose() {
+    // Dispose controller saat widget dibuang untuk mencegah memory leak
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Fungsi utama untuk login menggunakan email dan password
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
+    // Validasi form terlebih dahulu
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        // Sign in with email and password
-        await _auth.signInWithEmailAndPassword(
-          email: _email,
-          password: _password,
-        );
-        
-        // Navigate to home screen on success
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      } on FirebaseAuthException catch (e) {
-        // Handle different error cases
-        String errorMessage;
-        switch (e.code) {
-          case 'invalid-email':
-            errorMessage = 'Format email tidak valid';
-            break;
-          case 'user-disabled':
-            errorMessage = 'Akun ini dinonaktifkan';
-            break;
-          case 'user-not-found':
-            errorMessage = 'Tidak ada pengguna dengan email ini';
-            break;
-          case 'wrong-password':
-            errorMessage = 'Password salah';
-            break;
-          default:
-            errorMessage = 'Gagal masuk. Silakan coba lagi';
-        }
-        
-        if (mounted) {
-          setState(() {
-            _errorMessage = errorMessage;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Terjadi kesalahan. Silakan coba lagi';
-          });
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
+    // Set state loading dan reset pesan error
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Melakukan login ke Firebase Authentication
+      await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Jika widget sudah tidak ada di tree, hentikan proses
+      if (!mounted) return;
+
+      // Navigasi ke halaman home menggantikan halaman login
+      Navigator.pushReplacementNamed(context, AppConstants.homeRoute);
+    } on FirebaseAuthException catch (e) {
+      // Tangani error spesifik dari Firebase Auth
+      _handleAuthError(e);
+    } catch (e) {
+      // Tangani error tak terduga lainnya
+      _handleGenericError();
+    } finally {
+      // Matikan loading saat proses selesai (jika widget masih ada)
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // Mengatur pesan error khusus untuk error Firebase Auth
+  void _handleAuthError(FirebaseAuthException e) {
+    debugPrint('Error Code: ${e.code}');
+    final message = _getFriendlyErrorMessage(e.code);
+    if (mounted) setState(() => _errorMessage = message);
+  }
+
+  // Pesan error default untuk error tak terduga
+  void _handleGenericError() {
+    debugPrint('Unexpected Error');
+    if (mounted) {
+      setState(() => _errorMessage = 'Terjadi kesalahan tak terduga. Coba lagi');
+    }
+  }
+
+  // Mapping kode error Firebase ke pesan yang ramah pengguna
+  String _getFriendlyErrorMessage(String errorCode) {
+    return switch (errorCode) {
+      'invalid-email' => 'Format email tidak valid. Contoh: nama@email.com',
+      'user-not-found' => 'Email belum terdaftar. Silakan daftar terlebih dahulu',
+      'wrong-password' => 'Password salah. Silakan coba lagi',
+      _ => 'Terjadi kesalahan saat login',
+    };
+  }
+
+  // Widget pembantu untuk menampilkan label input dengan styling khusus
+  Widget _buildLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label,
+        style: AppTheme.lightTheme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppTheme.lightTheme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+
+  // Widget pembantu untuk input teks dengan border membulat dan opsi password
+  Widget _buildRoundedInput({
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    Widget? suffixIcon,
+    TextEditingController? controller,
+  }) {
+    final color = AppTheme.lightTheme.colorScheme.primary.withAlpha(40);
+    final borderRadius = BorderRadius.circular(32);
+
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: TextStyle(color: AppTheme.lightTheme.colorScheme.onSurface),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: color, // Warna latar belakang input
+        suffixIcon: suffixIcon, // Icon di ujung kanan input
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(borderRadius: borderRadius, borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: BorderSide.none),
+      ),
+      // Validator: field wajib diisi
+      validator: (value) => value?.isEmpty ?? true ? 'Field ini wajib diisi' : null,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Masuk'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  color: Colors.red.shade100,
-                  child: Row(
+    final theme = AppTheme.lightTheme;
+
+    return Theme(
+      data: theme,
+      child: Scaffold(
+        appBar: const WhiteAppBar(title: '', actions: []), // AppBar putih custom tanpa judul
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              children: [
+                // Gambar maskot di atas form
+                Image.asset('assets/images/maskot_2.png', height: 120, width: 120),
+
+                // Jika ada pesan error, tampilkan widget error
+                if (_errorMessage != null)
+                  _buildErrorWidget(),
+
+                // Form untuk input email dan password
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.error, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+                      _buildLabel('Email'),
+                      _buildRoundedInput(
+                        keyboardType: TextInputType.emailAddress,
+                        controller: _emailController,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      _buildLabel('Password'),
+                      _buildRoundedInput(
+                        obscureText: _obscurePassword,
+                        controller: _passwordController,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: theme.colorScheme.primary,
+                          ),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword), // Toggle tampil/simpan password
                         ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Tombol login
+                      _buildLoginButton(),
+
+                      // Tambahan teks "Belum punya akun? Daftar" dengan gesture untuk navigasi ke register screen
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Belum punya akun? '),
+                          GestureDetector(
+                            onTap: () {
+                              // Navigasi ke halaman register jika "Daftar" ditekan
+                              Navigator.pushReplacementNamed(context, AppConstants.registerRoute);
+                            },
+                            child: Text(
+                              'Daftar',
+                              style: TextStyle(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              // Email input field
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Email tidak boleh kosong';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(value)) {
-                    return 'Email tidak valid';
-                  }
-                  return null;
-                },
-                onSaved: (value) => _email = value!.trim(),
-              ),
-              const SizedBox(height: 16),
-              // Password input field
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  suffixIcon: TextButton(
-                    onPressed: () {
-                      // Navigate to forgot password screen or show dialog
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Lupa Password'),
-                          content: const Text('Kami akan mengirim link reset password ke email Anda.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Batal'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _resetPassword();
-                              },
-                              child: const Text('Kirim', style: TextStyle(color: Colors.green)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Lupa Password?',
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password tidak boleh kosong';
-                  }
-                  if (value.length < 6) {
-                    return 'Password minimal 6 karakter';
-                  }
-                  return null;
-                },
-                onSaved: (value) => _password = value!,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Masuk'),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        Navigator.pushReplacementNamed(context, '/register');
-                      },
-                child: const Text('Daftar Sekarang'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _resetPassword() async {
-    if (_email.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Reset Password'),
-          content: const Text('Silakan masukkan email Anda terlebih dahulu'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
+  // Widget untuk menampilkan pesan error dengan background merah dan icon error
+  Widget _buildErrorWidget() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error, color: Colors.red),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 
-    try {
-      await _auth.sendPasswordResetEmail(email: _email);
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Reset Password'),
-            content: Text('Link reset password telah dikirim ke $_email'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
+  // Tombol login dengan animasi loading saat proses login berlangsung
+  Widget _buildLoginButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _login, // Disable tombol saat loading
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(32),
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Error'),
-            content: const Text('Gagal mengirim email reset password'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
+        ),
+        // Tampilkan indikator loading jika sedang login, atau teks "Masuk" jika tidak
+        child: _isLoading
+            ? const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
           ),
-        );
-      }
-    }
+        )
+            : const Text('Masuk'),
+      ),
+    );
   }
 }

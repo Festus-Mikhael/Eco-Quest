@@ -1,95 +1,118 @@
 import 'package:flutter/material.dart';
-import '../../../models/user_model.dart';
 
 class ProfileSection extends StatelessWidget {
-  final UserModel user;
+  final String name;         // Nama user yang akan ditampilkan
+  final int points;          // Jumlah poin user
+  final List<String> badges; // Daftar lencana/badge user
+  final String rank;         // Peringkat user
 
-  const ProfileSection({super.key, required this.user});
+  const ProfileSection({
+    super.key,
+    required this.name,
+    required this.points,
+    required this.badges,
+    required this.rank,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Profile section showing avatar, name, points, and badges
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            // User avatar
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: NetworkImage(user.avatarUrl),
-              backgroundColor: Colors.green.shade100,
-            ),
-            const SizedBox(width: 16),
-            // User info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme; // Warna tema yang digunakan
+
+    return Column(
+      children: [
+        // Menampilkan nama user dengan gaya khusus
+        Text(
+          name,
+          style: TextStyle(
+            color: colorScheme.primary, // Warna utama dari tema
+            fontSize: 24,
+            fontWeight: FontWeight.w900, // Tebal dan menonjol
+          ),
+        ),
+        const SizedBox(height: 10), // Jarak vertikal
+
+        // Container yang menampung rank, badges, dan points
+        Container(
+          padding: const EdgeInsets.all(16),
+          width: 300,
+          constraints: const BoxConstraints(minHeight: 80),
+          decoration: BoxDecoration(
+            color: colorScheme.primary, // Latar belakang sesuai tema
+            borderRadius: BorderRadius.circular(8), // Sudut membulat
+          ),
+
+          // IntrinsicHeight membuat row memiliki tinggi sama pada semua kolom
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Bagian Rank
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.star, color: Colors.amber),
-                      const SizedBox(width: 4),
+                      Icon(Icons.insights, color: colorScheme.onSecondary),
+                      const SizedBox(height: 4),
                       Text(
-                        '${user.points} Poin',
-                        style: const TextStyle(fontSize: 16),
+                        rank,
+                        style: TextStyle(color: colorScheme.onSecondary),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  // Badges row
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: user.badges.map((badge) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade200,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/badge_icon.png',
-                                width: 20,
-                                height: 20,
-                                color: Colors.green.shade700,
-                                semanticLabel: 'Badge icon',
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                badge,
-                                style: TextStyle(
-                                  color: Colors.green.shade900,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                ),
+
+                // Garis pemisah vertikal pertama
+                Container(
+                  width: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 2),
+                  color: colorScheme.onSecondary.withAlpha(200), // Warna garis semi transparan
+                ),
+
+                // Bagian Badges
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.emoji_events, color: colorScheme.onSecondary),
+                      const SizedBox(height: 4),
+                      Text(
+                        badges.isEmpty ? 'None' : badges.join(', '),  // Tampilkan daftar badge atau 'None' jika kosong
+                        style: TextStyle(color: colorScheme.onSecondary),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                // Garis pemisah vertikal kedua
+                Container(
+                  width: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 2),
+                  color: colorScheme.onSecondary.withAlpha(200),
+                ),
+
+                // Bagian Points
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, color: colorScheme.onSecondary),
+                      const SizedBox(height: 4),
+                      Text(
+                        points.toString(), // Tampilkan poin sebagai string
+                        style: TextStyle(color: colorScheme.onSecondary),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        )
+      ],
     );
   }
 }

@@ -1,14 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:logger/logger.dart';
-import '../../models/user_model.dart';
-import '../../models/quest_model.dart';
-import '../home/components/profile_section.dart';
-import '../home/components/active_quest.dart';
-import '../home/components/leaderboard.dart';
-import '../../widgets/custom_appbar.dart';
-import '../../widgets/bottom_navbar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../../config/app_theme.dart';
+import '../../widgets/custom_green_appbar.dart';
+import 'components/home_content.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,257 +14,153 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Logger _logger = Logger();
-
-  UserModel? currentUser;
-  QuestModel? activeQuest;
-  List<Map<String, dynamic>> leaderboard = [];
-  bool _isLoading = true;
-  bool _hasError = false;
-  int _selectedIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadInitialData();
-  }
-
-  Future<void> _loadInitialData() async {
-    try {
-      await _fetchEssentialData();
-    } catch (e) {
-      _logger.e('Initial data load failed', error: e);
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _fetchEssentialData() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-
-      await _fetchUserProfile(user);
-      await _fetchActiveQuest(user);
-      await _fetchLeaderboard();
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _hasError = false;
-        });
-      }
-    } catch (e) {
-      _logger.e('Fetch data error', error: e);
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-        });
-      }
-    }
-  }
-
-  Future<void> _fetchUserProfile(User user) async {
-    try {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-
-      UserModel newUser;
-
-      if (!doc.exists) {
-        newUser = UserModel(
-          id: user.uid,
-          name: user.displayName ?? 'New User',
-          email: user.email ?? '',
-          avatarUrl: user.photoURL ?? 'https://placehold.co/100x100/png?text=User',
-          points: 0,
-          badges: [],
-        );
-        await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
-      } else {
-        newUser = UserModel.fromFirestore(doc);
-      }
-
-      if (mounted) {
-        setState(() => currentUser = newUser);
-      }
-    } catch (e) {
-      _logger.e('Failed to fetch user profile', error: e);
-      if (mounted) {
-        setState(() {
-          currentUser = UserModel(
-            id: user.uid,
-            name: user.displayName ?? 'User',
-            email: user.email ?? '',
-            avatarUrl: user.photoURL ?? 'https://placehold.co/100x100/png?text=User',
-            points: 0,
-            badges: [],
-          );
-        });
-      }
-    }
-  }
-
-  Future<void> _fetchActiveQuest(User user) async {
-    try {
-      final query = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('userQuests')
-          .where('status', isEqualTo: 'active')
-          .limit(1)
-          .get();
-
-      if (query.docs.isNotEmpty) {
-        final doc = query.docs.first;
-        if (mounted) {
-          setState(() {
-            activeQuest = QuestModel(
-              id: doc.id,
-              title: doc['title'] ?? 'Untitled Quest',
-              description: doc['description'] ?? '',
-              points: doc['points'] ?? 0,
-              status: QuestStatus.inProgress,
-            );
-          });
-        }
-      }
-    } catch (e) {
-      _logger.e('Failed to fetch active quest', error: e);
-    }
-  }
-
-  Future<void> _fetchLeaderboard() async {
-    try {
-      final snapshot = await _firestore
-          .collection('users')
-          .orderBy('points', descending: true)
-          .limit(10)
-          .get();
-
-      if (mounted) {
-        setState(() {
-          leaderboard = snapshot.docs.map((doc) {
-            return {
-              'name': doc['name'] ?? 'Anonymous',
-              'email': doc['email'] ?? '',
-              'avatarUrl': doc['avatarUrl'] ?? 'https://placehold.co/100x100/png?text=User',
-              'points': doc['points'] ?? 0,
-            };
-          }).toList();
-        });
-      }
-    } catch (e) {
-      _logger.e('Failed to fetch leaderboard', error: e);
-    }
-  }
-
-  Future<void> _logout() async {
-    try {
-      await _auth.signOut();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    } catch (e) {
-      _logger.e('Logout failed', error: e);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logout failed. Please try again.')),
-        );
-      }
-    }
-  }
-
-  void _onNavTap(int index) {
-    if (!mounted) return;
-
-    setState(() => _selectedIndex = index);
-
-    switch (index) {
-      case 1:
-        Navigator.pushNamed(context, '/quests');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/games');
-        break;
-    }
-  }
-
-  Future<void> _retryLoading() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _hasError = false;
-      });
-    }
-    await _loadInitialData();
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final user = _auth.currentUser; // Ambil user yang sedang login
+    if (user == null) {
+      // Jika tidak ada user, tampilkan pesan
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: Text('User not logged in')),
       );
     }
 
-    if (_hasError && currentUser == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Failed to load data'),
-              ElevatedButton(
-                onPressed: _retryLoading,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    // Referensi dokumen user di Firestore berdasarkan UID
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Home',
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Logout',
+      backgroundColor: AppTheme.lightTheme.colorScheme.primary,
+      appBar: const GreenAppBar(title: 'Eco Hero'),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: userDocRef.snapshots(), // Stream realtime data user
+        builder: (context, userSnapshot) {
+          if (userSnapshot.connectionState == ConnectionState.waiting) {
+            // Loading indicator saat menunggu data user
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (userSnapshot.hasError) {
+            // Tampilkan error jika terjadi error pada stream user
+            return _buildErrorState(userSnapshot.error.toString());
+          }
+          if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+            // Jika data user tidak ada atau tidak ditemukan
+            return _buildNoDataState();
+          }
+
+          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+          // Data user diambil dari snapshot
+          final activeQuest = userData['activeQuest']; // Quest aktif user (bisa null)
+          final userPoints = userData['points'] ?? 0; // Points user, default 0
+
+          // Stream untuk leaderboard top 5 user berdasarkan points tertinggi
+          final leaderboardStream = FirebaseFirestore.instance
+              .collection('users')
+              .orderBy('points', descending: true)
+              .limit(10)
+              .snapshots();
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: leaderboardStream,
+            builder: (context, leaderboardSnapshot) {
+              if (leaderboardSnapshot.connectionState == ConnectionState.waiting) {
+                // Loading indicator saat menunggu leaderboard
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (leaderboardSnapshot.hasError) {
+                // Tampilkan error jika gagal load leaderboard
+                return Center(child: Text('Error loading leaderboard'));
+              }
+
+              final leaderboardDocs = leaderboardSnapshot.data?.docs ?? [];
+
+              // Buat list leaderboard user dari dokumen snapshot
+              final leaderboardUsers = leaderboardDocs.map((doc) {
+                final data = doc.data()! as Map<String, dynamic>;
+                return {
+                  'uid': doc.id,
+                  'name': data['name'] ?? 'No Name',
+                  'points': data['points'] ?? 0,
+                };
+              }).toList();
+
+              // Cari posisi (index) user di dalam top 5 leaderboard
+              int rank = leaderboardUsers.indexWhere((u) => u['uid'] == user.uid) + 1;
+
+              // Jika rank = 0 artinya user tidak ada di top 5
+              if (rank == 0) {
+                // Karena ini async, kita tidak bisa hitung rank tepat di sini
+                // Jadi sementara set rank jadi -1 dan di UI nanti tampil '>5'
+                rank = -1;
+              }
+
+              // Hitung badges berdasarkan poin user
+              final badges = _getBadgesFromPoints(userPoints);
+
+              // Kirim data ke widget HomeContent untuk ditampilkan
+              return HomeContent(
+                userData: userData,
+                activeQuest: activeQuest,
+                rank: rank == -1 ? '>10' : rank.toString(), // Tampilkan rank atau '>5'
+                badges: badges,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  // Fungsi hitung badges sesuai poin user
+  List<String> _getBadgesFromPoints(int points) {
+    if (points >= 300) {
+      return ['Eco Hero'];
+    } else if (points >= 200) {
+      return ['Pohon'];
+    } else if (points >= 100) {
+      return ['Tunas'];
+    } else if (points >= 0) {
+      return ['Bibit'];
+    } else {
+      return [];
+    }
+  }
+
+  // Widget untuk menampilkan error dengan tombol retry
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 60, color: Colors.red),
+          const SizedBox(height: 20),
+          Text(
+            'Error: $error',
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => setState(() {}), // Reload ulang dengan setState
+            child: const Text('Retry'),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            currentUser != null
-                ? ProfileSection(user: currentUser!)
-                : const Placeholder(),
+    );
+  }
 
-            activeQuest != null
-                ? ActiveQuest(quest: activeQuest!)
-                : const Text('No active quests'),
-
-            Leaderboard(
-              leaderboardData: leaderboard,
-              currentUserEmail: currentUser?.email ?? '',
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+  // Widget untuk menampilkan saat data user tidak ditemukan
+  Widget _buildNoDataState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person_off, size: 60, color: Colors.grey),
+          SizedBox(height: 20),
+          Text(
+            'User data not found',
+            style: TextStyle(fontSize: 16),
+          ),
+        ],
       ),
     );
   }

@@ -1,21 +1,23 @@
-import 'package:flutter/material.dart';
-
+// Kelas AppConstants berisi konstanta yang digunakan secara global dalam aplikasi
 class AppConstants {
+  // Nama aplikasi
   static const String appName = 'EcoQuest';
-  
-  // Colors
-  static const Color primaryColor = Color(0xFF2E7D32);
-  static const Color secondaryColor = Color(0xFF81C784);
-  static const Color accentColor = Color(0xFF4CAF50);
-  
-  // Assets
-  static const String logoPath = 'assets/images/logo.png';
-  
-  // Routes
+
+  // Rute-navigasi untuk halaman splash screen
   static const String splashRoute = '/splash';
+
+  // Rute-navigasi untuk halaman pendaftaran
   static const String registerRoute = '/register';
+
+  // Rute-navigasi untuk halaman login
   static const String loginRoute = '/login';
+
+  // Rute-navigasi untuk halaman utama (beranda/home)
   static const String homeRoute = '/home';
+
+  // Rute-navigasi untuk halaman daftar quest
   static const String questsRoute = '/quests';
+
+  // Rute-navigasi untuk halaman mini games
   static const String gamesRoute = '/games';
 }
