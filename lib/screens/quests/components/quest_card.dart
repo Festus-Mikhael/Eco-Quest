@@ -21,97 +21,110 @@ class QuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // Ambil tema dari context
-    final isEven = index % 2 == 0; // Cek apakah index genap
-    final colorScheme = Theme.of(context).colorScheme; // Ambil skema warna tema
-    // Warna background beda untuk genap (primary) dan ganjil (secondary)
+    final theme = Theme.of(context);
+    final isEven = index % 2 == 0;
+    final colorScheme = theme.colorScheme;
     final backgroundColor = isEven ? colorScheme.primary : colorScheme.secondary;
-    // Cek apakah quest ini adalah quest yang aktif sekarang
     final isActive = quest.id == activeQuestId;
 
+    // Debug print untuk bantu cek status dan id aktif
+    debugPrint('QuestCard - Quest ID: ${quest.id}, Status: ${quest.status}, ActiveQuestId: $activeQuestId, isActive: $isActive');
+
+    // Untuk safety, kalau status null atau enum tidak dikenali, fallback ke notStarted
+    final status = quest.status ?? QuestStatus.notStarted;
+
+    Widget buildButton() {
+      switch (status) {
+        case QuestStatus.notStarted:
+          if (activeQuestId == null) {
+            return ElevatedButton(
+              onPressed: onTakeQuest,
+              child: const Text('Ambil Quest'),
+            );
+          } else if (activeQuestId != null && quest.id != activeQuestId) {
+            return const ElevatedButton(
+              onPressed: null,
+              child: Text('Sedang ada quest aktif lainnya'),
+            );
+          } else {
+            return const ElevatedButton(
+              onPressed: null,
+              child: Text('Tidak tersedia'),
+            );
+          }
+        case QuestStatus.inProgress:
+          if (isActive) {
+            return Row(
+              children: [
+                ElevatedButton(
+                  onPressed: onCompleteQuest,
+                  child: const Text('Selesai'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: onCancelQuest,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                  ),
+                  child: const Text('Batalkan'),
+                ),
+              ],
+            );
+          } else {
+            return const ElevatedButton(
+              onPressed: null,
+              child: Text('Tidak tersedia'),
+            );
+          }
+        case QuestStatus.completed:
+          return const ElevatedButton(
+            onPressed: null,
+            child: Text('Sudah Selesai'),
+          );
+        default:
+          return const ElevatedButton(
+            onPressed: null,
+            child: Text('Tidak tersedia'),
+          );
+      }
+    }
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Margin luar
-      padding: const EdgeInsets.all(16), // Padding dalam container
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor, // Warna background berdasarkan index genap/ganjil
-        borderRadius: BorderRadius.circular(20), // Sudut container melengkung
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black12, // Bayangan halus
+            color: Colors.black12,
             blurRadius: 6,
             offset: Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // Rata kiri isi kolom
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            quest.title, // Judul quest
-            style: theme.textTheme.displayLarge!.copyWith(
+            quest.title,
+            style: theme.textTheme.displayLarge?.copyWith(
               fontSize: 20,
-              color: Colors.white, // Teks putih supaya kontras dengan background
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            quest.description, // Deskripsi quest
+            quest.description,
             style: const TextStyle(color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
-            'Poin: ${quest.points}', // Tampilkan poin quest
+            'Poin: ${quest.points}',
             style: const TextStyle(color: Colors.white),
           ),
           const SizedBox(height: 16),
-          Builder(
-            builder: (context) {
-              // Tombol berdasarkan status quest dan apakah ada quest aktif lain
-              if (quest.status == QuestStatus.notStarted && activeQuestId == null) {
-                // Jika quest belum mulai dan tidak ada quest aktif, tampilkan tombol ambil quest
-                return ElevatedButton(
-                  onPressed: onTakeQuest,
-                  child: const Text('Ambil Quest'),
-                );
-              } else if (quest.status == QuestStatus.inProgress && isActive) {
-                // Jika quest sedang berlangsung dan ini quest aktif, tampilkan tombol selesai dan batalkan
-                return Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: onCompleteQuest,
-                      child: const Text('Selesai'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: onCancelQuest,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white, // Tombol batalkan dengan background putih
-                      ),
-                      child: const Text('Batalkan'),
-                    ),
-                  ],
-                );
-              } else if (quest.status == QuestStatus.completed) {
-                // Jika quest sudah selesai, tombol disabled dengan label sudah selesai
-                return const ElevatedButton(
-                  onPressed: null,
-                  child: Text('Sudah Selesai'),
-                );
-              } else if (activeQuestId != null && quest.id != activeQuestId && quest.status == QuestStatus.notStarted) {
-                // Jika ada quest aktif lain, dan quest ini belum diambil, tombol disabled dengan pesan
-                return const ElevatedButton(
-                  onPressed: null,
-                  child: Text('Sedang ada quest aktif lainnya'),
-                );
-              } else {
-                // Kondisi lain, tombol disabled dengan teks tidak tersedia
-                return const ElevatedButton(
-                  onPressed: null,
-                  child: Text('Tidak tersedia'),
-                );
-              }
-            },
-          ),
+          buildButton(),
         ],
       ),
     );
