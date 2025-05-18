@@ -27,49 +27,55 @@ class HomeContent extends StatelessWidget {
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(), // Scroll dengan efek bouncing
           child: SizedBox(
-            height: constraints.maxHeight, // Tinggi sesuai layout yang tersedia
+            height: constraints.maxHeight,
             child: Stack(
-              clipBehavior: Clip.none, // Mengizinkan widget keluar dari batas container
+              clipBehavior: Clip.none,
               children: [
                 // Container utama yang memuat profile dan quest aktif
                 Positioned(
-                  top: 100, // Posisi container di bawah maskot
-                  bottom: 0,
+                  top: 100,
                   left: 0,
                   right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(32, 50, 32, 32),
-                    decoration: BoxDecoration(
-                      color: AppTheme.lightTheme.colorScheme.surface, // Warna latar belakang container
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(32), // Sudut atas membulat
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1), // Bayangan halus
-                          blurRadius: 10,
-                          spreadRadius: 2,
+                  bottom: 0, // ini kita pakai, tapi container di dalamnya jangan pakai Center langsung
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: Container(
+                          height: constraints.maxHeight, // biar container tinggi penuh dari top:100 ke bawah
+                          padding: const EdgeInsets.fromLTRB(32, 50, 32, 32),
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          decoration: BoxDecoration(
+                            color: AppTheme.lightTheme.colorScheme.surface,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ProfileSection(
+                                  name: name,
+                                  points: points,
+                                  badges: badges,
+                                  rank: rank,
+                                ),
+                                const SizedBox(height: 20),
+                                ActiveQuest(
+                                  activeQuest: activeQuest,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
-                      // Membuat konten dalam container bisa di-scroll jika overflow
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ProfileSection(
-                            name: name,
-                            points: points,
-                            badges: badges,
-                            rank: rank,
-                          ), // Bagian profile user
-                          const SizedBox(height: 20),
-                          ActiveQuest(
-                            activeQuest: activeQuest,
-                          ), // Menampilkan quest aktif jika ada
-                        ],
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
                 // Maskot mengambang di atas container putih
