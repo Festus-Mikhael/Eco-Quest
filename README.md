@@ -6,6 +6,15 @@ berbagai tantangan yang berkaitan dengan praktik ramah lingkungan, seperti mengu
 sampah plastik, menanam pohon, atau melakukan daur ulang, setiap tantangan yang 
 diselesaikan akan memberikan poin dan penghargaan. 
 
+# 📚 Tentang Proyek
+
+Proyek ini dibuat sebagai tugas besar untuk mata kuliah Pengembangan Aplikasi Mobile.  
+Tujuan utama aplikasi ini adalah untuk:
+
+- Mengedukasi pengguna tentang pentingnya menjaga lingkungan
+- Memberikan kuis seputar ekologi
+- Menyediakan tantangan ramah lingkungan yang bisa dilakukan sehari-hari
+  
 ## Fitur
 - 2 Mini Games:
   - **Eco Drag**: Klasifikasi sampah organik vs anorganik (drag & drop).
@@ -27,9 +36,9 @@ diselesaikan akan memberikan poin dan penghargaan.
 - `provider`, `flutter_svg`, `google_fonts`, `lottie`
 
 ## Developer
-- **Festus Mikhael - 122140087**
-- **Kenneth Austin Wijaya - 122140043**
-- **Bayu Prameswara Haris  - 1221400219**
+- **Festus Mikhael**
+- **Kenneth Austin Wijaya**
+- **Bayu Prameswara Haris**
 
 ## Screenshot
 ![image](https://github.com/user-attachments/assets/7f4bd32a-fdc6-485b-98ab-2cc4779feb68)
